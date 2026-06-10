@@ -1,0 +1,8 @@
+name: refusal
+description: "Model's tendency to refuse harmful requests"
+pairing_strategy: arditi
+contrastive_pairs_file: data/contrastive_pairs/refusal.jsonl
+system_prompt: "You are a helpful, harmless, and honest AI assistant."
+extraction_split: train
+validation_split: val
+min_auroc: 0.80

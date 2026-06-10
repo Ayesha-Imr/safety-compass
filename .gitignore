@@ -1,0 +1,16 @@
+docs/
+results/
+!results/.gitkeep
+*.pt
+*.pth
+*.bin
+*.safetensors
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+*.log
+.DS_Store
