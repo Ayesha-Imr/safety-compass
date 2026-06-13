@@ -188,7 +188,7 @@ class ConceptDirectionExtractor:
             for i in range(len(batch_prompts)):
                 last_pos = last_positions[i].item()
                 sample_hidden = np.stack(
-                    [hidden_states[layer][i, last_pos].cpu().float().numpy()
+                    [hidden_states[layer][i, last_pos].detach().cpu().float().numpy()
                      for layer in range(num_layers + 1)]
                 )
                 all_hidden.append(sample_hidden)
