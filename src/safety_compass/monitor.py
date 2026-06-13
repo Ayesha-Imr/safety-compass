@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import itertools
+import json
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Mapping, Optional, Sequence, Union
 
 import numpy as np
@@ -87,6 +89,80 @@ class SafetyCompassMonitor:
         if norm == 0:
             return vector
         return vector / norm
+
+    @classmethod
+    def from_config(
+        cls,
+        model,
+        tokenizer,
+        experiment_config: Union[str, Path, dict],
+        *,
+        base_dir: Optional[Union[str, Path]] = None,
+        overrides: Optional[dict] = None,
+    ) -> "SafetyCompassMonitor":
+        from safety_compass.config import (
+            SafetyCompassConfigError,
+            load_experiment_config,
+            validate_experiment_config,
+            validate_model_config,
+        )
+
+        if isinstance(experiment_config, (str, Path)):
+            resolved = load_experiment_config(experiment_config, base_dir=base_dir)
+            if base_dir is None:
+                base_dir = Path.cwd()
+        elif isinstance(experiment_config, dict):
+            if base_dir is None:
+                raise SafetyCompassConfigError(
+                    "base_dir is required when experiment_config is a dict"
+                )
+            resolved = dict(experiment_config)
+            if "_resolved_model_config" not in resolved:
+                resolved = validate_experiment_config(resolved, base_dir=base_dir)
+                from safety_compass.config import load_yaml, validate_concept_config
+
+                model_cfg = load_yaml(Path(base_dir) / resolved["model_config_file"])
+                resolved["_resolved_model_config"] = validate_model_config(model_cfg)
+                concepts = []
+                for entry in resolved["concepts"]:
+                    c = load_yaml(Path(base_dir) / entry["config_file"])
+                    c = validate_concept_config(c, base_dir=base_dir)
+                    if entry.get("best_layer") is not None:
+                        c["best_layer"] = entry["best_layer"]
+                    concepts.append(c)
+                resolved["_resolved_concept_configs"] = concepts
+        else:
+            raise TypeError(
+                f"experiment_config must be a str, Path, or dict, got {type(experiment_config)}"
+            )
+
+        if overrides:
+            for section, values in overrides.items():
+                if section in resolved and isinstance(resolved[section], dict):
+                    resolved[section].update(values)
+                else:
+                    resolved[section] = values
+
+        model_cfg = resolved["_resolved_model_config"]
+        concept_configs = resolved["_resolved_concept_configs"]
+        monitor_cfg = resolved.get("monitor", {})
+
+        concept_layers = {}
+        for c in concept_configs:
+            if c.get("best_layer") is not None:
+                concept_layers[c["name"]] = c["best_layer"]
+
+        return cls(
+            model=model,
+            tokenizer=tokenizer,
+            concept_configs=concept_configs,
+            model_config=model_cfg,
+            base_dir=str(base_dir) if base_dir else None,
+            concept_layers=concept_layers,
+            include_cross_concept_cosines=monitor_cfg.get(
+                "include_cross_concept_cosines", True
+            ),
+        )
 
     def set_model(self, model):
         """Update the model reference used by all extractors."""
@@ -196,3 +272,71 @@ class SafetyCompassMonitor:
 
     def baseline_summary(self) -> dict:
         return {name: baseline.to_dict() for name, baseline in self.baselines.items()}
+
+    def save_baselines(self, output_dir: Union[str, Path]) -> None:
+        if not self.baselines:
+            raise RuntimeError("No baselines to save. Call setup() first.")
+        save_baselines_to_dir(self.baselines, output_dir)
+
+    def load_baselines(self, baselines_dir: Union[str, Path]) -> None:
+        self.baselines = load_baselines_from_dir(baselines_dir)
+
+
+def save_baselines_to_dir(
+    baselines: dict[str, ConceptBaseline],
+    output_dir: Union[str, Path],
+    model_name: Optional[str] = None,
+) -> None:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    arrays = {}
+    metadata = {}
+    for name, bl in baselines.items():
+        arrays[name] = np.asarray(bl.direction, dtype=np.float32)
+        metadata[name] = {
+            "layer": bl.layer,
+            "baseline_auroc": bl.baseline_auroc,
+            "direction_norm": bl.direction_norm,
+        }
+
+    np.savez(output_dir / "directions.npz", **arrays)
+
+    meta = {"concepts": metadata}
+    if model_name:
+        meta["model_name"] = model_name
+    with open(output_dir / "directions_metadata.json", "w") as f:
+        json.dump(meta, f, indent=2)
+
+
+def load_baselines_from_dir(
+    baselines_dir: Union[str, Path],
+) -> dict[str, ConceptBaseline]:
+    baselines_dir = Path(baselines_dir)
+    npz_path = baselines_dir / "directions.npz"
+    meta_path = baselines_dir / "directions_metadata.json"
+
+    if not npz_path.exists():
+        raise FileNotFoundError(f"Baseline directions not found: {npz_path}")
+    if not meta_path.exists():
+        raise FileNotFoundError(f"Baseline metadata not found: {meta_path}")
+
+    with open(meta_path) as f:
+        meta = json.load(f)
+
+    concept_meta = meta["concepts"]
+    data = np.load(npz_path, allow_pickle=False)
+
+    baselines = {}
+    for name, info in concept_meta.items():
+        if name not in data:
+            raise KeyError(f"Direction array for concept '{name}' not found in {npz_path}")
+        baselines[name] = ConceptBaseline(
+            name=name,
+            layer=info["layer"],
+            direction=data[name],
+            baseline_auroc=info["baseline_auroc"],
+            direction_norm=info["direction_norm"],
+        )
+
+    return baselines

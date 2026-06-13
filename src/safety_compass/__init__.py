@@ -17,4 +17,10 @@ def __getattr__(name):
     if name == "CompassCSVLogger":
         from safety_compass.logger import CompassCSVLogger
         return CompassCSVLogger
+    if name == "SafetyCompassConfigError":
+        from safety_compass.config import SafetyCompassConfigError
+        return SafetyCompassConfigError
+    if name == "load_experiment_config":
+        from safety_compass.config import load_experiment_config
+        return load_experiment_config
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
