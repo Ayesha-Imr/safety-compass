@@ -81,6 +81,10 @@ token_paths = [
     "/kaggle/input/nsa-hf-token/hf_token.txt",
     "/kaggle/input/nsa-hf-token/token.txt",
 ]
+for input_root, _dirs, files in os.walk("/kaggle/input"):
+    for file_name in files:
+        if file_name in {"hf_token.txt", "token.txt"}:
+            token_paths.append(os.path.join(input_root, file_name))
 for token_path in token_paths:
     if os.path.exists(token_path):
         with open(token_path) as f:
@@ -89,6 +93,12 @@ for token_path in token_paths:
         break
 else:
     print("  WARNING: No HF token found. Model or dataset download may fail if gated.")
+    print("  Available /kaggle/input entries:")
+    for input_root, dirs, files in os.walk("/kaggle/input"):
+        depth = input_root.replace("/kaggle/input", "").count(os.sep)
+        if depth > 1:
+            continue
+        print(f"    {input_root}: dirs={dirs}, files={files}")
 
 
 print("\nLoading experiment config...")
