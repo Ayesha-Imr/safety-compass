@@ -41,3 +41,6 @@ packages = ["src/safety_compass"]
 [tool.ruff]
 line-length = 100
 target-version = "py39"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

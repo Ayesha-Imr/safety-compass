@@ -11,6 +11,8 @@ This Kaggle kernel script runs on T4 GPU. It:
 Expected runtime: ~15-20 minutes on T4.
 """
 
+# ruff: noqa: E402
+
 import subprocess
 import sys
 import os
@@ -243,7 +245,7 @@ for name, r in results_summary.items():
         passing_concepts += 1
     print(f"{name:<15} {r['best_layer']:<12} {r['best_auroc']:<12.4f} {r['direction_norm']:<12.4f}  [{status}]")
 
-print(f"\nCross-concept cosine similarities:")
+print("\nCross-concept cosine similarities:")
 for key, val in cross_cosine.items():
     entangled = " (WARNING: high overlap)" if abs(val) > 0.7 else ""
     print(f"  {key}: {val:.4f}{entangled}")

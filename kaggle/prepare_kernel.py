@@ -7,7 +7,7 @@ and a copy of the phase's script.py.
 
 Usage:
     python kaggle/prepare_kernel.py phase0 --hf-token-dataset auto
-    python kaggle/prepare_kernel.py all --username ayeshaimr --hf-token-dataset ayeshaimr/safety-compass-hf-token
+    python kaggle/prepare_kernel.py all --username ayeshaimr --hf-token-dataset ayeshaimr/nsa-hf-token
 """
 
 import argparse
@@ -37,6 +37,7 @@ PHASES = {
 }
 
 OUTPUT_BASE = Path("/tmp/safety-compass-kernels")
+AUTO_HF_TOKEN_DATASET_SLUG = "nsa-hf-token"
 
 
 def get_kaggle_username() -> str:
@@ -76,7 +77,7 @@ def prepare_phase(phase_name: str, username: str, hf_token_dataset: str | None):
     if hf_token_dataset:
         resolved = hf_token_dataset
         if resolved == "auto":
-            resolved = f"{username}/safety-compass-hf-token"
+            resolved = f"{username}/{AUTO_HF_TOKEN_DATASET_SLUG}"
         dataset_sources.append(resolved)
 
     metadata = {
@@ -99,7 +100,7 @@ def prepare_phase(phase_name: str, username: str, hf_token_dataset: str | None):
     print(f"  Generated: {output_dir}/")
     print(f"    ID: {metadata['id']}")
     print(f"    Dataset sources: {metadata['dataset_sources']}")
-    print(f"    Push with:")
+    print("    Push with:")
     print(f"      kaggle kernels push -p {output_dir}/ --accelerator NvidiaTeslaT4")
 
 
@@ -114,7 +115,7 @@ def main():
     parser.add_argument(
         "--hf-token-dataset",
         default=None,
-        help="Kaggle dataset slug for HF token (use 'auto' for {username}/safety-compass-hf-token)",
+        help=f"Kaggle dataset slug for HF token (use 'auto' for {{username}}/{AUTO_HF_TOKEN_DATASET_SLUG})",
     )
     args = parser.parse_args()
 

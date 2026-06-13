@@ -84,6 +84,17 @@ class ConceptDirectionExtractor:
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         self._orig_padding_side = self.tokenizer.padding_side
 
+    def set_model(self, model):
+        """Update the model reference used for future extraction calls."""
+        self.model = model
+        self.clear_cache()
+
+    def _model_device(self):
+        """Return the device where input tensors should be placed."""
+        if hasattr(self.model, "device"):
+            return self.model.device
+        return next(self.model.parameters()).device
+
     def load_pairs(self, base_dir: Optional[str] = None):
         """Load and normalize contrastive pairs from JSONL."""
         pairs_path = self.concept_config["contrastive_pairs_file"]
@@ -148,14 +159,19 @@ class ConceptDirectionExtractor:
 
         for batch_start in range(0, len(prompts), batch_size):
             batch_prompts = prompts[batch_start : batch_start + batch_size]
+            max_length = self.model_config.get(
+                "max_seq_length",
+                self.model_config.get("max_length", 512),
+            )
             inputs = self.tokenizer(
                 batch_prompts,
                 return_tensors="pt",
                 padding=True,
                 truncation=True,
-                max_length=512,
+                max_length=max_length,
             )
-            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+            device = self._model_device()
+            inputs = {k: v.to(device) for k, v in inputs.items()}
 
             with torch.no_grad():
                 outputs = self.model(**inputs, output_hidden_states=True)
@@ -166,7 +182,8 @@ class ConceptDirectionExtractor:
             )
 
             attention_mask = inputs["attention_mask"]
-            last_positions = attention_mask.sum(dim=1) - 1
+            token_positions = torch.arange(attention_mask.shape[1], device=attention_mask.device)
+            last_positions = (attention_mask * token_positions).max(dim=1).values
 
             for i in range(len(batch_prompts)):
                 last_pos = last_positions[i].item()
@@ -177,7 +194,8 @@ class ConceptDirectionExtractor:
                 all_hidden.append(sample_hidden)
 
             del outputs, hidden_states, inputs
-            torch.cuda.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
         self.tokenizer.padding_side = self._orig_padding_side
         return np.stack(all_hidden)
@@ -198,15 +216,26 @@ class ConceptDirectionExtractor:
         pos_messages = [p[0] for p in pairs]
         neg_messages = [p[1] for p in pairs]
 
-        print(f"  [{self.name}] Extracting positive activations ({split}, {len(pos_messages)} samples)...")
+        print(
+            f"  [{self.name}] Extracting positive activations "
+            f"({split}, {len(pos_messages)} samples)..."
+        )
         pos_acts = self._extract_hidden_states(pos_messages)
-        print(f"  [{self.name}] Extracting negative activations ({split}, {len(neg_messages)} samples)...")
+        print(
+            f"  [{self.name}] Extracting negative activations "
+            f"({split}, {len(neg_messages)} samples)..."
+        )
         neg_acts = self._extract_hidden_states(neg_messages)
 
         self._cache[split] = (pos_acts, neg_acts)
         return pos_acts, neg_acts
 
-    def extract_direction(self, layer: int, split: str = "train", normalize: bool = True) -> np.ndarray:
+    def extract_direction(
+        self,
+        layer: int,
+        split: str = "train",
+        normalize: bool = True,
+    ) -> np.ndarray:
         """Compute DiM direction at a specific layer using cached activations."""
         pos_acts, neg_acts = self.extract_all_layers(split)
         direction = pos_acts[:, layer, :].mean(axis=0) - neg_acts[:, layer, :].mean(axis=0)

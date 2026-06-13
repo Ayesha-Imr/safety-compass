@@ -8,4 +8,13 @@ def __getattr__(name):
     if name == "register_strategy":
         from safety_compass.concept import register_strategy
         return register_strategy
+    if name == "SafetyCompassMonitor":
+        from safety_compass.monitor import SafetyCompassMonitor
+        return SafetyCompassMonitor
+    if name == "SafetyCompassCallback":
+        from safety_compass.callback import SafetyCompassCallback
+        return SafetyCompassCallback
+    if name == "CompassCSVLogger":
+        from safety_compass.logger import CompassCSVLogger
+        return CompassCSVLogger
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

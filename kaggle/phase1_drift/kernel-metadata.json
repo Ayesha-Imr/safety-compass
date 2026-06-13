@@ -1,0 +1,13 @@
+{
+  "id": "PLACEHOLDER_USERNAME/safety-compass-phase1",
+  "title": "safety-compass-phase1",
+  "code_file": "script.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}
