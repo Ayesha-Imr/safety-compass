@@ -23,4 +23,10 @@ def __getattr__(name):
     if name == "load_experiment_config":
         from safety_compass.config import load_experiment_config
         return load_experiment_config
+    if name == "get_formatter":
+        from safety_compass.formatters import get_formatter
+        return get_formatter
+    if name == "register_formatter":
+        from safety_compass.formatters import register_formatter
+        return register_formatter
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

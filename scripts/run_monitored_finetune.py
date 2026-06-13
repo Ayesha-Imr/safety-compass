@@ -95,34 +95,31 @@ def _apply_qlora(model, qlora_config, gradient_checkpointing=True):
 def _prepare_dataset(dataset_config, tokenizer, model_config, seed):
     from datasets import load_dataset
 
+    from safety_compass.formatters import get_formatter
+
     enable_thinking = bool(model_config.get("enable_thinking", False))
 
-    def apply_chat_template(messages, add_generation_prompt=False):
+    def chat_template_fn(messages):
         try:
             return tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
-                add_generation_prompt=add_generation_prompt,
+                add_generation_prompt=False,
                 enable_thinking=enable_thinking,
             )
         except TypeError:
             return tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
-                add_generation_prompt=add_generation_prompt,
+                add_generation_prompt=False,
             )
 
-    def format_alpaca_record(example):
-        instruction = (example.get("instruction") or "").strip()
-        input_text = (example.get("input") or "").strip()
-        output_text = (example.get("output") or "").strip()
-        user_content = f"{instruction}\n\n{input_text}" if input_text else instruction
-        messages = [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": user_content},
-            {"role": "assistant", "content": output_text},
-        ]
-        return {"text": apply_chat_template(messages)}
+    formatter_name = dataset_config.get("formatter", "alpaca")
+    formatter_fn = get_formatter(formatter_name)
+    print(f"  Using dataset formatter: {formatter_name}")
+
+    def format_record(example):
+        return formatter_fn(example, chat_template_fn)
 
     def tokenize_batch(batch):
         return tokenizer(
@@ -142,7 +139,7 @@ def _prepare_dataset(dataset_config, tokenizer, model_config, seed):
     raw = raw.select(range(subset_size))
 
     formatted = raw.map(
-        format_alpaca_record,
+        format_record,
         remove_columns=raw.column_names,
         desc="Formatting records",
     )

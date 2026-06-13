@@ -190,3 +190,224 @@ def plot_phase1_outputs(csv_path: str, output_dir: str, concepts: Optional[Seque
     output = Path(output_dir)
     plot_cosine_drift(str(csv_path), str(output / "phase1_cosine_drift.png"), concepts)
     plot_auroc_degradation(str(csv_path), str(output / "phase1_auroc_degradation.png"), concepts)
+
+
+# ---------------------------------------------------------------------------
+# Multi-experiment comparative plots (Phase 3+)
+# ---------------------------------------------------------------------------
+
+
+def _load_multi_experiment(
+    experiment_csvs: dict[str, str],
+    concepts: Optional[Sequence[str]] = None,
+) -> tuple[dict[str, list[dict]], list[str]]:
+    """Load rows from multiple experiment CSVs. Returns (label->rows, concepts)."""
+    all_rows = {}
+    for label, csv_path in experiment_csvs.items():
+        all_rows[label] = _read_rows(csv_path)
+    if concepts is None:
+        first_path = next(iter(experiment_csvs.values()))
+        concepts = infer_concepts(first_path)
+    return all_rows, list(concepts)
+
+
+def plot_comparative_cosine_drift(
+    experiment_csvs: dict[str, str],
+    output_path: str,
+    concepts: Optional[Sequence[str]] = None,
+):
+    """One subplot per concept showing cosine drift curves from each experiment."""
+    import matplotlib.pyplot as plt
+
+    all_rows, concepts = _load_multi_experiment(experiment_csvs, concepts)
+    n = len(concepts)
+    fig, axes = plt.subplots(1, n, figsize=(6 * n, 5), squeeze=False)
+
+    for idx, concept in enumerate(concepts):
+        ax = axes[0, idx]
+        column = f"{concept}_cosine_to_baseline"
+        for label, rows in all_rows.items():
+            steps = [_to_float(r["step"]) for r in rows]
+            values = [_to_float(r[column]) for r in rows]
+            ax.plot(steps, values, marker="o", markersize=3, label=label)
+
+        ax.axhline(0.95, linestyle="--", color="black", linewidth=1, alpha=0.6)
+        ax.set_xlabel("Training step")
+        ax.set_ylabel("Cosine similarity to baseline")
+        ax.set_title(concept.capitalize())
+        ax.grid(alpha=0.25)
+        ax.legend(fontsize=8)
+
+    fig.suptitle("Concept direction drift across experiments", fontsize=13)
+    fig.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def plot_drift_onset_table(
+    experiment_csvs: dict[str, str],
+    output_path: str,
+    concepts: Optional[Sequence[str]] = None,
+    threshold: float = 0.95,
+):
+    """Render a table image showing the step where cosine < threshold."""
+    import matplotlib.pyplot as plt
+
+    all_rows, concepts = _load_multi_experiment(experiment_csvs, concepts)
+    labels = list(experiment_csvs.keys())
+
+    cell_text = []
+    for concept in concepts:
+        row_cells = []
+        column = f"{concept}_cosine_to_baseline"
+        for label in labels:
+            rows = all_rows[label]
+            onset_step = None
+            for r in rows:
+                if _to_float(r[column]) < threshold:
+                    onset_step = int(_to_float(r["step"]))
+                    break
+            row_cells.append(str(onset_step) if onset_step is not None else "--")
+        cell_text.append(row_cells)
+
+    fig, ax = plt.subplots(figsize=(max(4, 2 * len(labels)), max(2, 0.6 * len(concepts) + 1.5)))
+    ax.axis("off")
+    table = ax.table(
+        cellText=cell_text,
+        rowLabels=[c.capitalize() for c in concepts],
+        colLabels=labels,
+        cellLoc="center",
+        loc="center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1.2, 1.6)
+    ax.set_title(f"Drift onset (step where cosine < {threshold})", fontsize=12, pad=20)
+    fig.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+
+
+def plot_comparative_auroc(
+    experiment_csvs: dict[str, str],
+    output_path: str,
+    concepts: Optional[Sequence[str]] = None,
+):
+    """One subplot per concept showing fixed-direction AUROC from each experiment."""
+    import matplotlib.pyplot as plt
+
+    all_rows, concepts = _load_multi_experiment(experiment_csvs, concepts)
+    n = len(concepts)
+    fig, axes = plt.subplots(1, n, figsize=(6 * n, 5), squeeze=False)
+
+    for idx, concept in enumerate(concepts):
+        ax = axes[0, idx]
+        column = f"{concept}_auroc_fixed"
+        for label, rows in all_rows.items():
+            steps = [_to_float(r["step"]) for r in rows]
+            values = [_to_float(r[column]) for r in rows]
+            ax.plot(steps, values, marker="o", markersize=3, label=label)
+
+        ax.axhline(0.80, linestyle="--", color="black", linewidth=1, alpha=0.6)
+        ax.set_xlabel("Training step")
+        ax.set_ylabel("AUROC (fixed direction)")
+        ax.set_title(concept.capitalize())
+        ax.grid(alpha=0.25)
+        ax.legend(fontsize=8)
+
+    fig.suptitle("Fixed-direction AUROC across experiments", fontsize=13)
+    fig.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def plot_comparative_cross_concept(
+    experiment_csvs: dict[str, str],
+    output_path: str,
+):
+    """Cross-concept coupling evolution per experiment, side by side."""
+    import matplotlib.pyplot as plt
+
+    all_rows = {}
+    for label, csv_path in experiment_csvs.items():
+        all_rows[label] = _read_rows(csv_path)
+
+    labels = list(experiment_csvs.keys())
+    n = len(labels)
+    fig, axes = plt.subplots(1, n, figsize=(6 * n, 5), squeeze=False)
+
+    for idx, label in enumerate(labels):
+        ax = axes[0, idx]
+        rows = all_rows[label]
+        if not rows:
+            continue
+        cross_cols = sorted(k for k in rows[0].keys() if k.startswith("cross_") and k.endswith("_cosine"))
+        steps = [_to_float(r["step"]) for r in rows]
+        for col in cross_cols:
+            pair_label = col.replace("cross_", "").replace("_cosine", "").replace("_", " vs ", 1)
+            ax.plot(steps, [_to_float(r[col]) for r in rows], marker="o", markersize=3, label=pair_label)
+
+        ax.axhline(0, linestyle="--", color="black", linewidth=0.5, alpha=0.5)
+        ax.set_xlabel("Training step")
+        ax.set_ylabel("Cross-concept cosine")
+        ax.set_title(label)
+        ax.grid(alpha=0.25)
+        ax.legend(fontsize=8)
+
+    fig.suptitle("Cross-concept coupling during fine-tuning", fontsize=13)
+    fig.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def plot_comparative_norm_dynamics(
+    experiment_csvs: dict[str, str],
+    output_path: str,
+    concepts: Optional[Sequence[str]] = None,
+):
+    """One subplot per concept showing direction norm evolution from each experiment."""
+    import matplotlib.pyplot as plt
+
+    all_rows, concepts = _load_multi_experiment(experiment_csvs, concepts)
+    n = len(concepts)
+    fig, axes = plt.subplots(1, n, figsize=(6 * n, 5), squeeze=False)
+
+    for idx, concept in enumerate(concepts):
+        ax = axes[0, idx]
+        column = f"{concept}_direction_norm"
+        for label, rows in all_rows.items():
+            if column not in rows[0]:
+                continue
+            steps = [_to_float(r["step"]) for r in rows]
+            values = [_to_float(r[column]) for r in rows]
+            ax.plot(steps, values, marker="o", markersize=3, label=label)
+
+        ax.set_xlabel("Training step")
+        ax.set_ylabel("Direction norm")
+        ax.set_title(concept.capitalize())
+        ax.grid(alpha=0.25)
+        ax.legend(fontsize=8)
+
+    fig.suptitle("Direction norm dynamics across experiments", fontsize=13)
+    fig.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def plot_phase3_comparison(
+    experiment_csvs: dict[str, str],
+    output_dir: str,
+    concepts: Optional[Sequence[str]] = None,
+):
+    """Generate all comparative plots for Phase 3 analysis."""
+    output = Path(output_dir)
+    plot_comparative_cosine_drift(experiment_csvs, str(output / "comparative_cosine_drift.png"), concepts)
+    plot_drift_onset_table(experiment_csvs, str(output / "drift_onset_table.png"), concepts)
+    plot_comparative_auroc(experiment_csvs, str(output / "comparative_auroc.png"), concepts)
+    plot_comparative_cross_concept(experiment_csvs, str(output / "comparative_cross_concept.png"))
+    plot_comparative_norm_dynamics(experiment_csvs, str(output / "comparative_norm_dynamics.png"), concepts)
