@@ -34,6 +34,11 @@ PHASES = {
         "title": "safety-compass-phase3",
         "script_dir": "kaggle/phase3_experiment",
     },
+    "phase4": {
+        "slug": "safety-compass-phase4",
+        "title": "safety-compass-phase4",
+        "script_dir": "kaggle/phase4_behavioral",
+    },
 }
 
 OUTPUT_BASE = Path("/tmp/safety-compass-kernels")
@@ -62,6 +67,7 @@ def prepare_phase(
     username: str,
     hf_token_dataset: str | None,
     phase3_experiment: int | None = None,
+    phase4_experiment: int | None = None,
 ):
     if phase_name not in PHASES:
         print(f"  Skipping unknown phase: {phase_name}")
@@ -84,6 +90,13 @@ def prepare_phase(
         new = f'EXPERIMENT_ID = int(os.environ.get("PHASE3_EXPERIMENT", "{phase3_experiment}"))'
         if old not in script_text:
             raise RuntimeError(f"Could not patch Phase 3 experiment default in {script_dst}")
+        script_dst.write_text(script_text.replace(old, new))
+    if phase_name == "phase4" and phase4_experiment is not None:
+        script_text = script_dst.read_text()
+        old = 'EXPERIMENT_ID = int(os.environ.get("PHASE4_EXPERIMENT", "3"))'
+        new = f'EXPERIMENT_ID = int(os.environ.get("PHASE4_EXPERIMENT", "{phase4_experiment}"))'
+        if old not in script_text:
+            raise RuntimeError(f"Could not patch Phase 4 experiment default in {script_dst}")
         script_dst.write_text(script_text.replace(old, new))
 
     dataset_sources = []
@@ -115,6 +128,8 @@ def prepare_phase(
     print(f"    Dataset sources: {metadata['dataset_sources']}")
     if phase_name == "phase3" and phase3_experiment is not None:
         print(f"    Phase 3 experiment baked into generated script: {phase3_experiment}")
+    if phase_name == "phase4" and phase4_experiment is not None:
+        print(f"    Phase 4 experiment baked into generated script: {phase4_experiment}")
     print("    Push with:")
     print(f"      kaggle kernels push -p {output_dir}/ --accelerator NvidiaTeslaT4")
 
@@ -142,6 +157,16 @@ def main():
             "Defaults to PHASE3_EXPERIMENT if set."
         ),
     )
+    parser.add_argument(
+        "--phase4-experiment",
+        type=int,
+        choices=[1, 2, 3],
+        default=None,
+        help=(
+            "For phase4, bake the selected experiment into the generated script. "
+            "Defaults to PHASE4_EXPERIMENT if set."
+        ),
+    )
     args = parser.parse_args()
 
     username = args.username or get_kaggle_username()
@@ -150,6 +175,11 @@ def main():
         phase3_experiment = int(os.environ["PHASE3_EXPERIMENT"])
         if phase3_experiment not in {1, 2, 3}:
             raise ValueError("PHASE3_EXPERIMENT must be one of 1, 2, or 3")
+    phase4_experiment = args.phase4_experiment
+    if phase4_experiment is None and os.environ.get("PHASE4_EXPERIMENT"):
+        phase4_experiment = int(os.environ["PHASE4_EXPERIMENT"])
+        if phase4_experiment not in {1, 2, 3}:
+            raise ValueError("PHASE4_EXPERIMENT must be one of 1, 2, or 3")
     print(f"Kaggle user: {username}")
 
     phases = list(PHASES.keys()) if args.phase == "all" else [args.phase]
@@ -160,6 +190,7 @@ def main():
             username,
             args.hf_token_dataset,
             phase3_experiment if phase == "phase3" else None,
+            phase4_experiment if phase == "phase4" else None,
         )
 
 

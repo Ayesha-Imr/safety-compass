@@ -29,4 +29,13 @@ def __getattr__(name):
     if name == "register_formatter":
         from safety_compass.formatters import register_formatter
         return register_formatter
+    if name == "default_behavioral_prompts":
+        from safety_compass.behavioral import default_behavioral_prompts
+        return default_behavioral_prompts
+    if name == "evaluate_behavioral_prompts":
+        from safety_compass.behavioral import evaluate_behavioral_prompts
+        return evaluate_behavioral_prompts
+    if name == "register_behavioral_scorer":
+        from safety_compass.behavioral import register_behavioral_scorer
+        return register_behavioral_scorer
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
