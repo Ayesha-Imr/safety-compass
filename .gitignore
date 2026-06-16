@@ -1,6 +1,12 @@
 docs/
-results/
+results/*
 !results/.gitkeep
+!results/README.md
+!results/phase3/
+!results/phase3/**
+!results/phase4/
+!results/phase4/**
+results/phase4/exp*/phase4_exp*_adapter/
 *.pt
 *.pth
 *.bin
@@ -13,4 +19,5 @@ build/
 .venv/
 .env
 *.log
+!results/**/*.log
 .DS_Store

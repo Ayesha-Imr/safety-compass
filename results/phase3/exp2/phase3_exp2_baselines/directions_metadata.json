@@ -1,0 +1,19 @@
+{
+  "concepts": {
+    "refusal": {
+      "layer": 17,
+      "baseline_auroc": 1.0,
+      "direction_norm": 18.59438705444336
+    },
+    "sycophancy": {
+      "layer": 3,
+      "baseline_auroc": 1.0,
+      "direction_norm": 0.34385645389556885
+    },
+    "deception": {
+      "layer": 1,
+      "baseline_auroc": 1.0,
+      "direction_norm": 0.37733709812164307
+    }
+  }
+}
