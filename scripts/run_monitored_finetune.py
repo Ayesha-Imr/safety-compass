@@ -6,17 +6,17 @@ HuggingFace Trainer training loop.
 
 Usage:
     python scripts/run_monitored_finetune.py \
-        --experiment-config configs/experiments/phase1_alpaca_qlora.yaml \
-        --output-dir results/phase1/
+        --experiment-config configs/experiments/alpaca_qlora.yaml \
+        --output-dir results/alpaca/
 
     python scripts/run_monitored_finetune.py \
-        --experiment-config configs/experiments/phase1_alpaca_qlora.yaml \
-        --output-dir results/phase1/ \
+        --experiment-config configs/experiments/alpaca_qlora.yaml \
+        --output-dir results/alpaca/ \
         --smoke
 
     python scripts/run_monitored_finetune.py \
-        --experiment-config configs/experiments/phase1_alpaca_qlora.yaml \
-        --output-dir results/phase1/ \
+        --experiment-config configs/experiments/alpaca_qlora.yaml \
+        --output-dir results/alpaca/ \
         --baselines results/baselines/
 """
 
@@ -31,46 +31,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-
-def _load_model_and_tokenizer(model_config, model_name_override=None):
-    import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-
-    model_name = model_name_override or model_config["model_name"]
-    print(f"Loading model: {model_name}")
-
-    quant = model_config.get("quantization")
-    kwargs = {
-        "device_map": "auto",
-        "token": os.environ.get("HF_TOKEN"),
-    }
-
-    if model_config.get("attn_implementation"):
-        kwargs["attn_implementation"] = model_config["attn_implementation"]
-
-    if quant == "nf4":
-        dtype_map = {"float16": torch.float16, "bfloat16": torch.bfloat16}
-        compute_dtype = dtype_map.get(
-            model_config.get("extraction_dtype", "float16"), torch.float16
-        )
-        kwargs["quantization_config"] = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=compute_dtype,
-            bnb_4bit_use_double_quant=model_config.get("double_quant", True),
-        )
-
-    model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
-    model.config.use_cache = False
-
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_name, token=os.environ.get("HF_TOKEN")
-    )
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-        tokenizer.pad_token_id = tokenizer.eos_token_id
-
-    return model, tokenizer
+from safety_compass.utils import (
+    DRIFT_THRESHOLD,
+    load_model_and_tokenizer,
+    make_chat_template_fn,
+)
 
 
 def _apply_qlora(model, qlora_config, gradient_checkpointing=True):
@@ -97,22 +62,7 @@ def _prepare_dataset(dataset_config, tokenizer, model_config, seed):
 
     from safety_compass.formatters import get_formatter
 
-    enable_thinking = bool(model_config.get("enable_thinking", False))
-
-    def chat_template_fn(messages):
-        try:
-            return tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=False,
-                enable_thinking=enable_thinking,
-            )
-        except TypeError:
-            return tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=False,
-            )
+    chat_template_fn = make_chat_template_fn(tokenizer, model_config)
 
     formatter_name = dataset_config.get("formatter", "alpaca")
     formatter_fn = get_formatter(formatter_name)
@@ -248,7 +198,10 @@ def main():
             indent=2,
         )
 
-    model, tokenizer = _load_model_and_tokenizer(model_config, args.model_name_or_path)
+    model, tokenizer = load_model_and_tokenizer(
+        model_config, args.model_name_or_path,
+        disable_cache=True, set_pad_token=True,
+    )
     if qlora_config:
         model = _apply_qlora(
             model, qlora_config,
@@ -330,7 +283,7 @@ def main():
         aurocs = [float(r[auroc_col]) for r in rows]
         min_cos = min(cosines)
         min_row = rows[cosines.index(min_cos)]
-        drifted = min_cos < 0.95
+        drifted = min_cos < DRIFT_THRESHOLD
         any_drift = any_drift or drifted
         concept_summaries[name] = {
             "min_cosine_to_baseline": min_cos,
@@ -338,12 +291,12 @@ def main():
             "final_cosine_to_baseline": cosines[-1],
             "min_auroc_fixed": min(aurocs),
             "final_auroc_fixed": aurocs[-1],
-            "drifted_below_0_95": drifted,
+            "drifted_below_threshold": drifted,
         }
 
     summary = {
         "status": "GO" if any_drift else "NO_GO",
-        "go_criterion": "At least one concept has cosine_to_baseline < 0.95",
+        "go_criterion": f"At least one concept has cosine_to_baseline < {DRIFT_THRESHOLD}",
         "num_measurements": len(rows),
         "concepts": concept_summaries,
         "baseline_summary": monitor.baseline_summary(),

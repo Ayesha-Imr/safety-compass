@@ -3,11 +3,11 @@
 
 Usage:
     python scripts/extract_directions.py \
-        --experiment-config configs/experiments/phase1_alpaca_qlora.yaml \
+        --experiment-config configs/experiments/alpaca_qlora.yaml \
         --output-dir results/baselines/
 
     python scripts/extract_directions.py \
-        --experiment-config configs/experiments/phase1_alpaca_qlora.yaml \
+        --experiment-config configs/experiments/alpaca_qlora.yaml \
         --output-dir results/baselines/ \
         --concepts refusal,deception
 
@@ -16,7 +16,6 @@ Usage:
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -26,54 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from safety_compass.concept import ConceptDirectionExtractor, _STRATEGIES
 from safety_compass.config import load_experiment_config
 from safety_compass.monitor import ConceptBaseline, save_baselines_to_dir
-
-
-def _load_model(model_config, model_name_override=None):
-    try:
-        import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-    except ImportError:
-        print(
-            "ERROR: torch and transformers are required. "
-            "Install with: pip install 'safety-compass[gpu]'"
-        )
-        sys.exit(1)
-
-    model_name = model_name_override or model_config["model_name"]
-    print(f"Loading model: {model_name}")
-
-    quant = model_config.get("quantization")
-    kwargs = {
-        "device_map": "auto",
-        "output_hidden_states": True,
-        "token": os.environ.get("HF_TOKEN"),
-    }
-
-    if model_config.get("attn_implementation"):
-        kwargs["attn_implementation"] = model_config["attn_implementation"]
-
-    if quant == "nf4":
-        from transformers import BitsAndBytesConfig
-
-        dtype_map = {"float16": torch.float16, "bfloat16": torch.bfloat16}
-        compute_dtype = dtype_map.get(
-            model_config.get("extraction_dtype", "float16"), torch.float16
-        )
-        kwargs["quantization_config"] = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=compute_dtype,
-            bnb_4bit_use_double_quant=model_config.get("double_quant", True),
-        )
-
-    model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
-    model.eval()
-
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_name, token=os.environ.get("HF_TOKEN")
-    )
-
-    return model, tokenizer
+from safety_compass.utils import MIN_AUROC_DEFAULT, load_model_and_tokenizer
 
 
 def main():
@@ -131,7 +83,10 @@ def main():
     if args.concepts:
         concept_filter = {c.strip() for c in args.concepts.split(",")}
 
-    model, tokenizer = _load_model(model_config, args.model_name_or_path)
+    model, tokenizer = load_model_and_tokenizer(
+        model_config, args.model_name_or_path,
+        output_hidden_states=True, eval_mode=True,
+    )
 
     import numpy as np
     import torch
@@ -205,7 +160,7 @@ def main():
         )
 
         concept_time = time.time() - concept_start
-        status = "PASS" if auroc >= concept_cfg.get("min_auroc", 0.80) else "FAIL"
+        status = "PASS" if auroc >= concept_cfg.get("min_auroc", MIN_AUROC_DEFAULT) else "FAIL"
         print(f"  Layer: {layer}, AUROC: {auroc:.4f}, Norm: {direction_norm:.4f} [{status}]")
         print(f"  Time: {concept_time:.1f}s")
 
@@ -229,10 +184,10 @@ def main():
     print(f"\n{'Concept':<15} {'Layer':<8} {'AUROC':<10} {'Norm':<12} {'Status'}")
     print("-" * 55)
     for name, bl in baselines.items():
-        min_auroc = 0.80
+        min_auroc = MIN_AUROC_DEFAULT
         for c in concept_configs:
             if c["name"] == name:
-                min_auroc = c.get("min_auroc", 0.80)
+                min_auroc = c.get("min_auroc", MIN_AUROC_DEFAULT)
                 break
         status = "PASS" if bl.baseline_auroc >= min_auroc else "FAIL"
         print(f"{name:<15} {bl.layer:<8} {bl.baseline_auroc:<10.4f} {bl.direction_norm:<12.4f} {status}")

@@ -34,7 +34,7 @@ tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-8B")
 monitor = SafetyCompassMonitor.from_config(
     model=model,
     tokenizer=tokenizer,
-    experiment_config="configs/experiments/phase1_alpaca_qlora.yaml",
+    experiment_config="configs/experiments/alpaca_qlora.yaml",
 )
 
 # 3. Attach callback to your Trainer
@@ -68,7 +68,7 @@ Safety Compass uses three layers of YAML configuration:
 
 ### Experiment Config
 
-The top-level config that ties everything together. See [`configs/experiments/phase1_alpaca_qlora.yaml`](configs/experiments/phase1_alpaca_qlora.yaml).
+The top-level config that ties everything together. See [`configs/experiments/alpaca_qlora.yaml`](configs/experiments/alpaca_qlora.yaml).
 
 ```yaml
 seed: 42
@@ -77,7 +77,7 @@ model_config_file: configs/models/qwen3-8b.yaml
 concepts:
   - name: refusal
     config_file: configs/concepts/refusal.yaml
-    best_layer: 31          # from Phase 0 validation
+    best_layer: 31          # from baseline validation
   - name: sycophancy
     config_file: configs/concepts/sycophancy.yaml
     best_layer: 18
@@ -157,19 +157,17 @@ quantization: nf4
 - **Cosine drifts but AUROC stays high**: The concept has moved geometrically but the original direction still classifies well. The concept is reorganizing but not disappearing.
 - **Cross-concept cosines increasing**: Different safety concepts are becoming more aligned (entangled) during fine-tuning.
 
-## Phase 0/1 Results
+## Experimental Results
 
 Validation on Qwen3-8B with Alpaca QLoRA fine-tuning (5k examples, 3 epochs):
 
-| Concept | Phase 0 AUROC | Phase 1 Final Cosine | Phase 1 Final Fixed AUROC |
+| Concept | Baseline AUROC | Final Cosine | Final Fixed AUROC |
 |---------|--------------|---------------------|--------------------------|
 | Refusal | 0.94 | 0.6171 | 0.99 |
 | Sycophancy | 0.87 | 0.3678 | 1.0 |
 | Deception | 0.99 | 0.5249 | 1.0 |
 
 All three concepts drifted significantly during benign fine-tuning, with sycophancy showing the largest geometric drift and refusal being the only concept with (minor) AUROC degradation.
-
-Detailed results and plots are in the [docs repository](safety-compass-docs/results/phase1/).
 
 ## Development
 

@@ -6,20 +6,20 @@ concepts:
   - name: refusal
     config_file: configs/concepts/refusal.yaml
     best_layer: 31
-    phase0_auroc: 0.94
+    baseline_auroc: 0.94
   - name: sycophancy
     config_file: configs/concepts/sycophancy.yaml
     best_layer: 18
-    phase0_auroc: 0.87
+    baseline_auroc: 0.87
   - name: deception
     config_file: configs/concepts/deception.yaml
     best_layer: 20
-    phase0_auroc: 0.99
+    baseline_auroc: 0.99
 
 monitor:
   measure_every_n_steps: 50
   include_cross_concept_cosines: true
-  output_csv: phase1_drift_log.csv
+  output_csv: drift_log.csv
 
 dataset:
   name: tatsu-lab/alpaca

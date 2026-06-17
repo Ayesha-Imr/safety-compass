@@ -7,6 +7,8 @@ import torch
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 
+from safety_compass.utils import make_chat_template_fn
+
 
 # ---------------------------------------------------------------------------
 # Pairing strategy registry
@@ -78,6 +80,9 @@ class ConceptDirectionExtractor:
         self._train_pairs = None
         self._val_pairs = None
         self._cache = {}
+        self._chat_template_fn = make_chat_template_fn(
+            tokenizer, model_config, add_generation_prompt=True,
+        )
 
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -130,20 +135,7 @@ class ConceptDirectionExtractor:
 
     def _format_prompt(self, messages: list) -> str:
         """Format chat messages into a prompt string via the tokenizer's chat template."""
-        enable_thinking = self.model_config.get("enable_thinking", False)
-        try:
-            return self.tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-                enable_thinking=enable_thinking,
-            )
-        except TypeError:
-            return self.tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-            )
+        return self._chat_template_fn(messages)
 
     def _extract_hidden_states(self, message_list: list) -> np.ndarray:
         """Run batched forward passes, extract hidden states at last real token.

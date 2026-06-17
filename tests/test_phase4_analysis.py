@@ -1,4 +1,4 @@
-from scripts.analyze_phase4_behavior import build_drift_behavior_rows
+from safety_compass.behavioral import build_drift_behavior_rows
 
 
 def test_build_drift_behavior_rows():

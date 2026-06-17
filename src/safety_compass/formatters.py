@@ -41,56 +41,50 @@ def list_formatters() -> list[str]:
     return sorted(_FORMATTERS.keys())
 
 
-@register_formatter("alpaca")
-def format_alpaca(example: dict, chat_template_fn: Callable) -> dict:
-    """Format a tatsu-lab/alpaca row.  Fields: instruction, input, output."""
-    instruction = (example.get("instruction") or "").strip()
-    input_text = (example.get("input") or "").strip()
-    output_text = (example.get("output") or "").strip()
+def _format_instruction_response(
+    example: dict,
+    chat_template_fn: Callable,
+    *,
+    instruction_field: str = "instruction",
+    secondary_field: str = "input",
+    output_field: str = "output",
+    system_prompt: str = "You are a helpful assistant.",
+) -> dict:
+    instruction = (example.get(instruction_field) or "").strip()
+    secondary = (example.get(secondary_field) or "").strip()
+    output_text = (example.get(output_field) or "").strip()
 
-    user_content = f"{instruction}\n\n{input_text}" if input_text else instruction
+    user_content = f"{instruction}\n\n{secondary}" if secondary else instruction
     messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_content},
         {"role": "assistant", "content": output_text},
     ]
     return {"text": chat_template_fn(messages)}
+
+
+@register_formatter("alpaca")
+def format_alpaca(example: dict, chat_template_fn: Callable) -> dict:
+    """Format a tatsu-lab/alpaca row.  Fields: instruction, input, output."""
+    return _format_instruction_response(example, chat_template_fn)
 
 
 @register_formatter("dolly")
 def format_dolly(example: dict, chat_template_fn: Callable) -> dict:
-    """Format a databricks/databricks-dolly-15k row.
-
-    Fields: instruction, context, response, category.
-    """
-    instruction = (example.get("instruction") or "").strip()
-    context = (example.get("context") or "").strip()
-    response = (example.get("response") or "").strip()
-
-    user_content = f"{instruction}\n\n{context}" if context else instruction
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": user_content},
-        {"role": "assistant", "content": response},
-    ]
-    return {"text": chat_template_fn(messages)}
+    """Format a databricks/databricks-dolly-15k row."""
+    return _format_instruction_response(
+        example,
+        chat_template_fn,
+        secondary_field="context",
+        output_field="response",
+    )
 
 
 @register_formatter("code_alpaca")
 def format_code_alpaca(example: dict, chat_template_fn: Callable) -> dict:
-    """Format a sahil2801/CodeAlpaca-20k row.
-
-    Same schema as Alpaca (instruction, input, output) with a
-    code-specific system prompt.
-    """
-    instruction = (example.get("instruction") or "").strip()
-    input_text = (example.get("input") or "").strip()
-    output_text = (example.get("output") or "").strip()
-
-    user_content = f"{instruction}\n\n{input_text}" if input_text else instruction
-    messages = [
-        {"role": "system", "content": "You are a helpful coding assistant."},
-        {"role": "user", "content": user_content},
-        {"role": "assistant", "content": output_text},
-    ]
-    return {"text": chat_template_fn(messages)}
+    """Format a sahil2801/CodeAlpaca-20k row."""
+    return _format_instruction_response(
+        example,
+        chat_template_fn,
+        system_prompt="You are a helpful coding assistant.",
+    )

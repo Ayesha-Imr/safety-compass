@@ -13,11 +13,11 @@ concepts:
 monitor:
   measure_every_n_steps: 50
   include_cross_concept_cosines: true
-  output_csv: phase3_exp3_drift_log.csv
+  output_csv: drift_log.csv
 
 dataset:
-  name: sahil2801/CodeAlpaca-20k
-  formatter: code_alpaca
+  name: tatsu-lab/alpaca
+  formatter: alpaca
   subset_size: 5000
   max_seq_length: 512
 

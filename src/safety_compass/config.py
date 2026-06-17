@@ -7,6 +7,7 @@ from typing import Optional, Union
 import yaml
 
 from safety_compass.concept import _STRATEGIES
+from safety_compass.utils import MIN_AUROC_DEFAULT
 
 
 class SafetyCompassConfigError(ValueError):
@@ -49,7 +50,7 @@ _CONCEPT_OPTIONAL = {
     "description": None,
     "extraction_split": "train",
     "validation_split": "val",
-    "min_auroc": 0.80,
+    "min_auroc": MIN_AUROC_DEFAULT,
     "system_prompt": None,
     "positive_system_prompt": None,
     "negative_system_prompt": None,

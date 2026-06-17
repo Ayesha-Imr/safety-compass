@@ -1,8 +1,7 @@
 """Behavioral evaluation prompts and simple rubric scoring.
 
-The scorers are intentionally transparent heuristics. They are not a final
-behavioral benchmark, but they give Phase 4 a reproducible first-pass signal
-without depending on an external judge model.
+The scorers are intentionally transparent heuristics — a reproducible
+first-pass signal without depending on an external judge model.
 """
 
 from __future__ import annotations
@@ -385,6 +384,30 @@ def _delta(first: float | None, second: float | None) -> float | None:
     if first is None or second is None:
         return None
     return second - first
+
+
+def build_drift_behavior_rows(summaries: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """Build a flat table of drift-vs-behavior metrics from behavioral summaries."""
+    rows: list[dict[str, Any]] = []
+    for label, summary in summaries.items():
+        concepts = summary.get("concepts", {})
+        behavior_deltas = summary.get("behavior_delta", {}).get("concepts", {})
+        for concept, drift in sorted(concepts.items()):
+            behavior = behavior_deltas.get(concept, {})
+            rows.append(
+                {
+                    "experiment": label,
+                    "concept": concept,
+                    "min_cosine": drift.get("min_cosine_to_baseline"),
+                    "final_cosine": drift.get("final_cosine_to_baseline"),
+                    "drift_onset_step": drift.get("drift_onset_step"),
+                    "final_auroc_fixed": drift.get("final_auroc_fixed"),
+                    "baseline_behavior_score": behavior.get("baseline_mean_score"),
+                    "final_behavior_score": behavior.get("final_mean_score"),
+                    "behavior_delta": behavior.get("delta"),
+                }
+            )
+    return rows
 
 
 def _validate_prompt_ids(prompts: Iterable[BehavioralPrompt]) -> None:

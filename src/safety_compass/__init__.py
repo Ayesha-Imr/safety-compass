@@ -1,7 +1,7 @@
 __version__ = "0.1.0"
 
 
-def __getattr__(name):
+def __getattr__(name):  # noqa: C901
     if name == "ConceptDirectionExtractor":
         from safety_compass.concept import ConceptDirectionExtractor
         return ConceptDirectionExtractor
@@ -38,4 +38,13 @@ def __getattr__(name):
     if name == "register_behavioral_scorer":
         from safety_compass.behavioral import register_behavioral_scorer
         return register_behavioral_scorer
+    if name == "build_drift_behavior_rows":
+        from safety_compass.behavioral import build_drift_behavior_rows
+        return build_drift_behavior_rows
+    if name == "load_model_and_tokenizer":
+        from safety_compass.utils import load_model_and_tokenizer
+        return load_model_and_tokenizer
+    if name == "make_chat_template_fn":
+        from safety_compass.utils import make_chat_template_fn
+        return make_chat_template_fn
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

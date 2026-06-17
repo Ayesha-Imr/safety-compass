@@ -1,23 +1,19 @@
 from __future__ import annotations
 
-import csv
 from pathlib import Path
 from typing import Optional, Sequence
 
-
-def _read_rows(csv_path: str) -> list[dict]:
-    with open(csv_path, newline="") as f:
-        return list(csv.DictReader(f))
-
-
-def _to_float(value: str) -> float:
-    if value == "":
-        return float("nan")
-    return float(value)
+from safety_compass.utils import (
+    DEFAULT_PLOT_DPI,
+    DRIFT_THRESHOLD,
+    MIN_AUROC_DEFAULT,
+    read_csv_rows,
+    to_float,
+)
 
 
 def infer_concepts(csv_path: str) -> list[str]:
-    rows = _read_rows(csv_path)
+    rows = read_csv_rows(csv_path)
     if not rows:
         return []
     suffix = "_cosine_to_baseline"
@@ -32,16 +28,16 @@ def plot_cosine_drift(
     """Plot cosine similarity to each concept's baseline direction over time."""
     import matplotlib.pyplot as plt
 
-    rows = _read_rows(csv_path)
+    rows = read_csv_rows(csv_path)
     concepts = list(concepts or infer_concepts(csv_path))
-    steps = [_to_float(row["step"]) for row in rows]
+    steps = [to_float(row["step"]) for row in rows]
 
     fig, ax = plt.subplots(figsize=(9, 5))
     for concept in concepts:
         column = f"{concept}_cosine_to_baseline"
-        ax.plot(steps, [_to_float(row[column]) for row in rows], marker="o", label=concept)
+        ax.plot(steps, [to_float(row[column]) for row in rows], marker="o", label=concept)
 
-    ax.axhline(0.95, linestyle="--", color="black", linewidth=1, label="GO threshold")
+    ax.axhline(DRIFT_THRESHOLD, linestyle="--", color="black", linewidth=1, label="GO threshold")
     ax.set_xlabel("Training step")
     ax.set_ylabel("Cosine similarity to baseline")
     ax.set_title("Concept direction drift")
@@ -49,7 +45,7 @@ def plot_cosine_drift(
     ax.legend()
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=160)
+    fig.savefig(output_path, dpi=DEFAULT_PLOT_DPI)
     plt.close(fig)
 
 
@@ -61,16 +57,16 @@ def plot_auroc_degradation(
     """Plot held-out AUROC using original fixed directions over time."""
     import matplotlib.pyplot as plt
 
-    rows = _read_rows(csv_path)
+    rows = read_csv_rows(csv_path)
     concepts = list(concepts or infer_concepts(csv_path))
-    steps = [_to_float(row["step"]) for row in rows]
+    steps = [to_float(row["step"]) for row in rows]
 
     fig, ax = plt.subplots(figsize=(9, 5))
     for concept in concepts:
         column = f"{concept}_auroc_fixed"
-        ax.plot(steps, [_to_float(row[column]) for row in rows], marker="o", label=concept)
+        ax.plot(steps, [to_float(row[column]) for row in rows], marker="o", label=concept)
 
-    ax.axhline(0.80, linestyle="--", color="black", linewidth=1, label="Phase 0 pass line")
+    ax.axhline(MIN_AUROC_DEFAULT, linestyle="--", color="black", linewidth=1, label="AUROC pass line")
     ax.set_xlabel("Training step")
     ax.set_ylabel("Validation AUROC")
     ax.set_title("Fixed-direction AUROC during fine-tuning")
@@ -78,7 +74,7 @@ def plot_auroc_degradation(
     ax.legend()
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=160)
+    fig.savefig(output_path, dpi=DEFAULT_PLOT_DPI)
     plt.close(fig)
 
 
@@ -92,10 +88,10 @@ def plot_metric_heatmap(
     import matplotlib.pyplot as plt
     import numpy as np
 
-    rows = _read_rows(csv_path)
+    rows = read_csv_rows(csv_path)
     concepts = list(concepts or infer_concepts(csv_path))
     metrics = list(metrics or ["cosine_to_baseline", "auroc_fixed", "direction_norm"])
-    steps = [_to_float(row["step"]) for row in rows]
+    steps = [to_float(row["step"]) for row in rows]
 
     labels = []
     data = []
@@ -105,7 +101,7 @@ def plot_metric_heatmap(
             if column not in rows[0]:
                 continue
             labels.append(f"{concept}\n{metric}")
-            data.append([_to_float(row[column]) for row in rows])
+            data.append([to_float(row[column]) for row in rows])
 
     data = np.array(data)
 
@@ -139,7 +135,7 @@ def plot_metric_heatmap(
     fig.colorbar(im, ax=ax, label="Normalized value", shrink=0.8)
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=160)
+    fig.savefig(output_path, dpi=DEFAULT_PLOT_DPI)
     plt.close(fig)
 
 
@@ -151,7 +147,7 @@ def plot_cross_concept_evolution(
     """Plot cross-concept cosine similarities over training steps."""
     import matplotlib.pyplot as plt
 
-    rows = _read_rows(csv_path)
+    rows = read_csv_rows(csv_path)
     if not rows:
         return
 
@@ -159,12 +155,12 @@ def plot_cross_concept_evolution(
     if not cross_cols:
         return
 
-    steps = [_to_float(row["step"]) for row in rows]
+    steps = [to_float(row["step"]) for row in rows]
 
     fig, ax = plt.subplots(figsize=(9, 5))
     for col in sorted(cross_cols):
         label = col.replace("cross_", "").replace("_cosine", "").replace("_", " vs ", 1)
-        ax.plot(steps, [_to_float(row[col]) for row in rows], marker="o", label=label)
+        ax.plot(steps, [to_float(row[col]) for row in rows], marker="o", label=label)
 
     ax.axhline(0, linestyle="--", color="black", linewidth=0.5, alpha=0.5)
     ax.set_xlabel("Training step")
@@ -174,7 +170,7 @@ def plot_cross_concept_evolution(
     ax.legend()
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=160)
+    fig.savefig(output_path, dpi=DEFAULT_PLOT_DPI)
     plt.close(fig)
 
 
@@ -186,14 +182,15 @@ def plot_all_outputs(csv_path: str, output_dir: str, concepts: Optional[Sequence
     plot_cross_concept_evolution(str(csv_path), str(output / "cross_concept_evolution.png"), concepts)
 
 
-def plot_phase1_outputs(csv_path: str, output_dir: str, concepts: Optional[Sequence[str]] = None):
+def plot_single_experiment(csv_path: str, output_dir: str, concepts: Optional[Sequence[str]] = None):
+    """Generate cosine drift and AUROC plots for a single experiment."""
     output = Path(output_dir)
-    plot_cosine_drift(str(csv_path), str(output / "phase1_cosine_drift.png"), concepts)
-    plot_auroc_degradation(str(csv_path), str(output / "phase1_auroc_degradation.png"), concepts)
+    plot_cosine_drift(str(csv_path), str(output / "cosine_drift.png"), concepts)
+    plot_auroc_degradation(str(csv_path), str(output / "auroc_degradation.png"), concepts)
 
 
 # ---------------------------------------------------------------------------
-# Multi-experiment comparative plots (Phase 3+)
+# Multi-experiment comparative plots
 # ---------------------------------------------------------------------------
 
 
@@ -204,7 +201,7 @@ def _load_multi_experiment(
     """Load rows from multiple experiment CSVs. Returns (label->rows, concepts)."""
     all_rows = {}
     for label, csv_path in experiment_csvs.items():
-        all_rows[label] = _read_rows(csv_path)
+        all_rows[label] = read_csv_rows(csv_path)
     if concepts is None:
         first_path = next(iter(experiment_csvs.values()))
         concepts = infer_concepts(first_path)
@@ -227,11 +224,11 @@ def plot_comparative_cosine_drift(
         ax = axes[0, idx]
         column = f"{concept}_cosine_to_baseline"
         for label, rows in all_rows.items():
-            steps = [_to_float(r["step"]) for r in rows]
-            values = [_to_float(r[column]) for r in rows]
+            steps = [to_float(r["step"]) for r in rows]
+            values = [to_float(r[column]) for r in rows]
             ax.plot(steps, values, marker="o", markersize=3, label=label)
 
-        ax.axhline(0.95, linestyle="--", color="black", linewidth=1, alpha=0.6)
+        ax.axhline(DRIFT_THRESHOLD, linestyle="--", color="black", linewidth=1, alpha=0.6)
         ax.set_xlabel("Training step")
         ax.set_ylabel("Cosine similarity to baseline")
         ax.set_title(concept.capitalize())
@@ -241,7 +238,7 @@ def plot_comparative_cosine_drift(
     fig.suptitle("Concept direction drift across experiments", fontsize=13)
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=160)
+    fig.savefig(output_path, dpi=DEFAULT_PLOT_DPI)
     plt.close(fig)
 
 
@@ -249,7 +246,7 @@ def plot_drift_onset_table(
     experiment_csvs: dict[str, str],
     output_path: str,
     concepts: Optional[Sequence[str]] = None,
-    threshold: float = 0.95,
+    threshold: float = DRIFT_THRESHOLD,
 ):
     """Render a table image showing the step where cosine < threshold."""
     import matplotlib.pyplot as plt
@@ -265,8 +262,8 @@ def plot_drift_onset_table(
             rows = all_rows[label]
             onset_step = None
             for r in rows:
-                if _to_float(r[column]) < threshold:
-                    onset_step = int(_to_float(r["step"]))
+                if to_float(r[column]) < threshold:
+                    onset_step = int(to_float(r["step"]))
                     break
             row_cells.append(str(onset_step) if onset_step is not None else "--")
         cell_text.append(row_cells)
@@ -286,7 +283,7 @@ def plot_drift_onset_table(
     ax.set_title(f"Drift onset (step where cosine < {threshold})", fontsize=12, pad=20)
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=160, bbox_inches="tight")
+    fig.savefig(output_path, dpi=DEFAULT_PLOT_DPI, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -306,11 +303,11 @@ def plot_comparative_auroc(
         ax = axes[0, idx]
         column = f"{concept}_auroc_fixed"
         for label, rows in all_rows.items():
-            steps = [_to_float(r["step"]) for r in rows]
-            values = [_to_float(r[column]) for r in rows]
+            steps = [to_float(r["step"]) for r in rows]
+            values = [to_float(r[column]) for r in rows]
             ax.plot(steps, values, marker="o", markersize=3, label=label)
 
-        ax.axhline(0.80, linestyle="--", color="black", linewidth=1, alpha=0.6)
+        ax.axhline(MIN_AUROC_DEFAULT, linestyle="--", color="black", linewidth=1, alpha=0.6)
         ax.set_xlabel("Training step")
         ax.set_ylabel("AUROC (fixed direction)")
         ax.set_title(concept.capitalize())
@@ -320,7 +317,7 @@ def plot_comparative_auroc(
     fig.suptitle("Fixed-direction AUROC across experiments", fontsize=13)
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=160)
+    fig.savefig(output_path, dpi=DEFAULT_PLOT_DPI)
     plt.close(fig)
 
 
@@ -333,7 +330,7 @@ def plot_comparative_cross_concept(
 
     all_rows = {}
     for label, csv_path in experiment_csvs.items():
-        all_rows[label] = _read_rows(csv_path)
+        all_rows[label] = read_csv_rows(csv_path)
 
     labels = list(experiment_csvs.keys())
     n = len(labels)
@@ -345,10 +342,10 @@ def plot_comparative_cross_concept(
         if not rows:
             continue
         cross_cols = sorted(k for k in rows[0].keys() if k.startswith("cross_") and k.endswith("_cosine"))
-        steps = [_to_float(r["step"]) for r in rows]
+        steps = [to_float(r["step"]) for r in rows]
         for col in cross_cols:
             pair_label = col.replace("cross_", "").replace("_cosine", "").replace("_", " vs ", 1)
-            ax.plot(steps, [_to_float(r[col]) for r in rows], marker="o", markersize=3, label=pair_label)
+            ax.plot(steps, [to_float(r[col]) for r in rows], marker="o", markersize=3, label=pair_label)
 
         ax.axhline(0, linestyle="--", color="black", linewidth=0.5, alpha=0.5)
         ax.set_xlabel("Training step")
@@ -360,7 +357,7 @@ def plot_comparative_cross_concept(
     fig.suptitle("Cross-concept coupling during fine-tuning", fontsize=13)
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=160)
+    fig.savefig(output_path, dpi=DEFAULT_PLOT_DPI)
     plt.close(fig)
 
 
@@ -382,8 +379,8 @@ def plot_comparative_norm_dynamics(
         for label, rows in all_rows.items():
             if column not in rows[0]:
                 continue
-            steps = [_to_float(r["step"]) for r in rows]
-            values = [_to_float(r[column]) for r in rows]
+            steps = [to_float(r["step"]) for r in rows]
+            values = [to_float(r[column]) for r in rows]
             ax.plot(steps, values, marker="o", markersize=3, label=label)
 
         ax.set_xlabel("Training step")
@@ -395,16 +392,16 @@ def plot_comparative_norm_dynamics(
     fig.suptitle("Direction norm dynamics across experiments", fontsize=13)
     fig.tight_layout()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=160)
+    fig.savefig(output_path, dpi=DEFAULT_PLOT_DPI)
     plt.close(fig)
 
 
-def plot_phase3_comparison(
+def plot_experiment_comparison(
     experiment_csvs: dict[str, str],
     output_dir: str,
     concepts: Optional[Sequence[str]] = None,
 ):
-    """Generate all comparative plots for Phase 3 analysis."""
+    """Generate all comparative plots for a multi-experiment analysis."""
     output = Path(output_dir)
     plot_comparative_cosine_drift(experiment_csvs, str(output / "comparative_cosine_drift.png"), concepts)
     plot_drift_onset_table(experiment_csvs, str(output / "drift_onset_table.png"), concepts)

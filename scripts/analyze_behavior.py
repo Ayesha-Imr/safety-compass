@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
-"""Analyze Phase 4 behavioral validation results.
+"""Analyze behavioral validation results across experiments.
 
 Usage:
-    python scripts/analyze_phase4_behavior.py \
-        --results-dir results/phase4 \
-        --output-dir results/phase4/analysis
+    python scripts/analyze_behavior.py \
+        --results-dir results/behavioral/ \
+        --output-dir results/behavioral/analysis
 
-    python scripts/analyze_phase4_behavior.py \
-        --summary "Code Alpaca=results/phase4/exp3/phase4_exp3_behavior_summary.json" \
-        --output-dir results/phase4/analysis
+    python scripts/analyze_behavior.py \
+        --summary "Code Alpaca=results/behavioral/exp3/behavior_summary.json" \
+        --output-dir results/behavioral/analysis
 """
 
 import argparse
 import csv
 import json
+import sys
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+from safety_compass.behavioral import build_drift_behavior_rows
+from safety_compass.utils import DEFAULT_PLOT_DPI, DRIFT_THRESHOLD
 
 
 DEFAULT_EXPERIMENT_DIRS = {
@@ -28,36 +34,13 @@ DEFAULT_EXPERIMENT_DIRS = {
 def find_summary(directory: Path) -> Path:
     candidates = sorted(directory.glob("*behavior_summary.json"))
     if not candidates:
-        raise FileNotFoundError(f"No Phase 4 behavior summary found in {directory}")
+        raise FileNotFoundError(f"No behavior summary found in {directory}")
     return candidates[0]
 
 
 def load_summary(path: str | Path) -> dict[str, Any]:
     with open(path) as f:
         return json.load(f)
-
-
-def build_drift_behavior_rows(summaries: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for label, summary in summaries.items():
-        concepts = summary.get("concepts", {})
-        behavior_deltas = summary.get("behavior_delta", {}).get("concepts", {})
-        for concept, drift in sorted(concepts.items()):
-            behavior = behavior_deltas.get(concept, {})
-            rows.append(
-                {
-                    "experiment": label,
-                    "concept": concept,
-                    "min_cosine": drift.get("min_cosine_to_baseline"),
-                    "final_cosine": drift.get("final_cosine_to_baseline"),
-                    "drift_onset_step": drift.get("drift_onset_step"),
-                    "final_auroc_fixed": drift.get("final_auroc_fixed"),
-                    "baseline_behavior_score": behavior.get("baseline_mean_score"),
-                    "final_behavior_score": behavior.get("final_mean_score"),
-                    "behavior_delta": behavior.get("delta"),
-                }
-            )
-    return rows
 
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
@@ -100,18 +83,18 @@ def write_drift_behavior_plot(path: str | Path, rows: list[dict[str, Any]]) -> N
             fontsize=8,
         )
     ax.axhline(0, color="0.6", linewidth=1, linestyle="--")
-    ax.axvline(0.95, color="0.6", linewidth=1, linestyle="--")
+    ax.axvline(DRIFT_THRESHOLD, color="0.6", linewidth=1, linestyle="--")
     ax.set_xlabel("Minimum cosine to baseline")
     ax.set_ylabel("Behavior score delta")
-    ax.set_title("Phase 4 drift vs behavior")
+    ax.set_title("Drift vs behavioral score")
     ax.grid(True, alpha=0.25)
     fig.tight_layout()
-    fig.savefig(path, dpi=150)
+    fig.savefig(path, dpi=DEFAULT_PLOT_DPI)
     plt.close(fig)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Analyze Phase 4 behavioral validation results")
+    parser = argparse.ArgumentParser(description="Analyze behavioral validation results")
     parser.add_argument("--results-dir", default=None, help="Directory containing exp1/, exp2/, exp3/")
     parser.add_argument(
         "--summary",
@@ -153,7 +136,7 @@ def main():
     plot_path = output_dir / "drift_vs_behavior_plot.png"
     write_drift_behavior_plot(plot_path, rows)
 
-    analysis_path = output_dir / "phase4_behavior_analysis.json"
+    analysis_path = output_dir / "behavior_analysis.json"
     with open(analysis_path, "w") as f:
         json.dump(
             {
