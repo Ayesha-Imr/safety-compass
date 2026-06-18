@@ -17,7 +17,10 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+try:
+    from safety_compass.data_sources import generate_pairs  # noqa: F401
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from safety_compass.data_sources import generate_pairs, list_data_sources
 

@@ -1,5 +1,24 @@
 __version__ = "0.1.0"
 
+__all__ = [
+    "__version__",
+    "ConceptDirectionExtractor",
+    "register_strategy",
+    "SafetyCompassMonitor",
+    "SafetyCompassCallback",
+    "CompassCSVLogger",
+    "SafetyCompassConfigError",
+    "load_experiment_config",
+    "get_formatter",
+    "register_formatter",
+    "default_behavioral_prompts",
+    "evaluate_behavioral_prompts",
+    "register_behavioral_scorer",
+    "build_drift_behavior_rows",
+    "load_model_and_tokenizer",
+    "make_chat_template_fn",
+]
+
 
 def __getattr__(name):  # noqa: C901
     if name == "ConceptDirectionExtractor":

@@ -20,7 +20,10 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+try:
+    from safety_compass.concept import ConceptDirectionExtractor  # noqa: F401
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from safety_compass.concept import ConceptDirectionExtractor, _STRATEGIES
 from safety_compass.config import load_experiment_config

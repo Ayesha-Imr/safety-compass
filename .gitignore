@@ -1,3 +1,4 @@
+!.github/
 docs/
 results/*
 !results/.gitkeep

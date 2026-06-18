@@ -1,0 +1,53 @@
+name: Concept Contribution Proposal
+description: Propose a new safety concept for Safety Compass
+title: "[Concept] "
+labels: ["concept-bounty", "enhancement"]
+body:
+  - type: input
+    id: concept-name
+    attributes:
+      label: Concept Name
+      description: Short identifier (e.g., toxicity, power-seeking, hallucination)
+      placeholder: e.g., toxicity
+    validations:
+      required: true
+
+  - type: dropdown
+    id: pairing-strategy
+    attributes:
+      label: Pairing Strategy
+      description: See CONTRIBUTING.md for when to use each strategy
+      options:
+        - arditi (same system prompt, different user queries)
+        - caa (different system prompts, same user query)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Concept Description
+      description: What does this concept measure? Why is it safety-relevant?
+    validations:
+      required: true
+
+  - type: textarea
+    id: example-pairs
+    attributes:
+      label: Example Contrastive Pairs
+      description: Show 2-3 example positive/negative pairs in JSONL format
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: data-source
+    attributes:
+      label: Data Source
+      description: Is there a HuggingFace dataset or other source to generate pairs programmatically?
+
+  - type: textarea
+    id: behavioral-prompts
+    attributes:
+      label: Behavioral Evaluation Prompts
+      description: If you have ideas for prompts to validate this concept behaviorally

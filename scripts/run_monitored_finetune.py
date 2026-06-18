@@ -29,7 +29,10 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+try:
+    from safety_compass.utils import DRIFT_THRESHOLD  # noqa: F401
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from safety_compass.utils import (
     DRIFT_THRESHOLD,
