@@ -34,9 +34,9 @@ All directions start at **1.0** before fine-tuning. The table shows how far each
 | Dolly | Sycophancy | Agreed with 30% more false premises |
 | All 3 | Deception | Modest behavioral change despite geometric stability |
 
-![Cosine drift across all three datasets](results/phase3/analysis/comparative_cosine_drift.png)
+![Geometric drift vs behavioral change](results/phase4/analysis/drift_vs_behavior_plot.png)
 
-*The fragility hierarchy is consistent across all datasets: refusal drifts the most, sycophancy is intermediate, deception barely moves.*
+*Each point is one (dataset, concept) pair. Lower cosine (more drift) correlates with larger behavioral degradation. Refusal points cluster at the left with the most drift and behavior change; deception stays near 1.0.*
 
 The refusal direction is consistently the most fragile safety concept, drifting significantly even during benign (non-adversarial) fine-tuning. This suggests refusal behavior is the first safety property at risk during any fine-tuning run.
 
@@ -44,17 +44,27 @@ The refusal direction is consistently the most fragile safety concept, drifting 
 
 ```bash
 # Core (extraction + monitoring)
-pip install git+https://github.com/Ayesha-Imr/safety-compass.git
+pip install safety-compass
 
 # With GPU support (4-bit quantization, LoRA, accelerate)
-pip install "safety-compass[gpu] @ git+https://github.com/Ayesha-Imr/safety-compass.git"
+pip install "safety-compass[gpu]"
 
 # With data generation (HuggingFace datasets for contrastive pair creation)
-pip install "safety-compass[data] @ git+https://github.com/Ayesha-Imr/safety-compass.git"
+pip install "safety-compass[data]"
 
 # Everything
-pip install "safety-compass[gpu,data,viz,dev] @ git+https://github.com/Ayesha-Imr/safety-compass.git"
+pip install "safety-compass[gpu,data,viz,dev]"
 ```
+
+<details>
+<summary>Development install (from source)</summary>
+
+```bash
+git clone https://github.com/Ayesha-Imr/safety-compass.git
+cd safety-compass
+pip install -e ".[dev]"
+```
+</details>
 
 ## Compatibility
 

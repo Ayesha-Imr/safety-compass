@@ -71,7 +71,10 @@ safety-compass-pairs = "safety_compass.cli:prepare_contrastive_pairs"
 [tool.hatch.build.targets.wheel]
 packages = ["src/safety_compass"]
 
-[tool.hatch.build.force-include]
+[tool.hatch.build.targets.sdist]
+include = ["src/", "scripts/", "LICENSE", "README.md"]
+
+[tool.hatch.build.targets.wheel.force-include]
 "scripts/extract_directions.py" = "safety_compass/_scripts/extract_directions.py"
 "scripts/run_monitored_finetune.py" = "safety_compass/_scripts/run_monitored_finetune.py"
 "scripts/prepare_contrastive_pairs.py" = "safety_compass/_scripts/prepare_contrastive_pairs.py"
