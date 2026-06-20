@@ -7,7 +7,7 @@ import safety_compass.monitor as monitor_module
 from safety_compass.config import SafetyCompassConfigError
 from safety_compass.monitor import SafetyCompassMonitor
 
-from tests.test_monitor import FakeExtractor, FakeModel
+from test_monitor import FakeExtractor, FakeModel
 
 
 def _write_yaml(path, data):

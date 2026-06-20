@@ -11,6 +11,7 @@ requires-python = ">=3.9"
 license = "MIT"
 authors = [
     {name = "Ayesha Imran", email = "ayesha.i1505@gmail.com"},
+    {name = "Muhammad Aaliyan", email = "aaliyan1230@gmail.com"},
 ]
 keywords = [
     "safety",
@@ -82,4 +83,4 @@ line-length = 100
 target-version = "py39"
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "tests"]

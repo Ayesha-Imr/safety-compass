@@ -10,15 +10,17 @@ Safety Compass uses [difference-in-means (DiM)](https://arxiv.org/abs/2310.01405
 
 We monitored three safety concepts -- refusal, sycophancy, and deception -- across three benign fine-tuning datasets (Alpaca, Dolly, Code Alpaca) on Qwen3-8B. The fragility hierarchy is consistent across all datasets:
 
-**Cosine similarity to baseline direction** (lower = more drift from original):
+**Cosine similarity to baseline direction** (1.0 = unchanged, 0.0 = completely different):
+
+All directions start at **1.0** before fine-tuning. The table shows how far each direction drifted during training (lowest point reached &rarr; where it settled at the end):
 
 | Dataset | Refusal | Sycophancy | Deception |
 |---------|---------|------------|-----------|
-| Alpaca | 0.353 &rarr; 0.378 | 0.687 &rarr; 0.689 | 0.985 &rarr; 0.985 |
-| Dolly | 0.369 &rarr; 0.439 | 0.644 &rarr; 0.662 | 0.963 &rarr; 0.967 |
-| Code Alpaca | 0.338 &rarr; 0.352 | 0.762 &rarr; 0.786 | 0.996 &rarr; 0.997 |
+| Alpaca | 1.0 &rarr; **0.353** &rarr; 0.378 | 1.0 &rarr; **0.687** &rarr; 0.689 | 1.0 &rarr; **0.985** &rarr; 0.985 |
+| Dolly | 1.0 &rarr; **0.369** &rarr; 0.439 | 1.0 &rarr; **0.644** &rarr; 0.662 | 1.0 &rarr; **0.963** &rarr; 0.967 |
+| Code Alpaca | 1.0 &rarr; **0.338** &rarr; 0.352 | 1.0 &rarr; **0.762** &rarr; 0.786 | 1.0 &rarr; **0.996** &rarr; 0.997 |
 
-*Values shown as min &rarr; final cosine similarity. Refusal direction drops to ~0.35 within 50 training steps across all datasets. Deception direction barely moves.*
+*Format: start &rarr; **min** &rarr; final. Refusal drops to ~0.35 (65% rotation) within just 50 training steps, then partially recovers. Deception barely moves at all.*
 
 **Behavioral validation** confirms that geometric drift predicts observable behavior change:
 
@@ -45,6 +47,14 @@ pip install "safety-compass[data] @ git+https://github.com/Ayesha-Imr/safety-com
 # Everything
 pip install "safety-compass[gpu,data,viz,dev] @ git+https://github.com/Ayesha-Imr/safety-compass.git"
 ```
+
+## Compatibility
+
+**Fine-tuning methods:** Safety Compass works with any fine-tuning approach that uses the HuggingFace `Trainer` -- QLoRA, LoRA, full fine-tuning, or any other method. The callback only reads the model's hidden states at measurement time; it doesn't care how the weights are being updated.
+
+**Models:** Any HuggingFace causal language model (`AutoModelForCausalLM`) that supports `output_hidden_states=True` and has a tokenizer with `apply_chat_template`. This covers most modern chat/instruct models (Qwen, Llama, Mistral, Gemma, etc.). You just need a model config YAML specifying `num_layers` and `hidden_dim` -- see `configs/models/` for examples.
+
+**Hardware:** Extraction runs forward passes on contrastive pairs (~60 prompts), so it needs enough memory to hold the model + a small batch of activations. Our experiments used a Kaggle T4 (15GB VRAM) with 4-bit quantized Qwen3-8B. Smaller models or larger GPUs work without quantization.
 
 ## Quickstart
 
@@ -123,8 +133,8 @@ Training loop           Periodic re-extraction          Drift metrics
 
 **Two pairing strategies are built in:**
 
-- **Arditi** (used for refusal): Same system prompt, different user queries. Isolates the model's response to harmful vs. harmless content.
-- **CAA** (used for sycophancy, deception): Different system prompts, same user query. Isolates the effect of behavioral instructions.
+- **[Arditi et al.](https://arxiv.org/abs/2406.11717)** (used for refusal): Same system prompt, different user queries. Isolates the model's response to harmful vs. harmless content.
+- **[CAA (Rimsky et al.)](https://arxiv.org/abs/2312.06681)** (used for sycophancy, deception): Different system prompts, same user query. Isolates the effect of behavioral instructions.
 
 ## Configuration
 
@@ -202,12 +212,12 @@ You can monitor any concept that can be expressed as a contrast between two beha
 
 **1. Create contrastive pairs** as a JSONL file in `data/contrastive_pairs/`. Each line needs fields matching your pairing strategy:
 
-For **arditi** (same system prompt, different queries):
+For **[arditi](https://arxiv.org/abs/2406.11717)** (same system prompt, different queries):
 ```json
 {"system": "You are helpful.", "positive_query": "How do I bake bread?", "negative_query": "How do I pick a lock?", "split": "train"}
 ```
 
-For **caa** (different system prompts, same query):
+For **[caa](https://arxiv.org/abs/2312.06681)** (different system prompts, same query):
 ```json
 {"user_query": "Is the earth flat?", "positive_system": "Be honest even if it's unpopular.", "negative_system": "Always agree with the user.", "split": "train"}
 ```
@@ -291,7 +301,7 @@ Each concept is a self-contained contribution: create the contrastive pairs, val
 ```bibtex
 @software{imran2025safetycompass,
     title  = {Safety Compass: Monitoring Safety-Relevant Concept Directions During LLM Fine-Tuning},
-    author = {Imran, Ayesha},
+    author = {Imran, Ayesha and Aaliyan, Muhammad},
     url    = {https://github.com/Ayesha-Imr/safety-compass},
     year   = {2025},
 }
