@@ -134,7 +134,7 @@ Training loop           Periodic re-extraction          Drift metrics
 **Two pairing strategies are built in:**
 
 - **[Arditi et al.](https://arxiv.org/abs/2406.11717)** (used for refusal): Same system prompt, different user queries. Isolates the model's response to harmful vs. harmless content.
-- **[CAA (Rimsky et al.)](https://arxiv.org/abs/2312.06681)** (used for sycophancy, deception): Different system prompts, same user query. Isolates the effect of behavioral instructions.
+- **[CAA (Panickssery et al.)](https://arxiv.org/abs/2312.06681)** (used for sycophancy, deception): Different system prompts, same user query. Isolates the effect of behavioral instructions.
 
 ## Configuration
 
