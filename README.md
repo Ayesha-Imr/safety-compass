@@ -34,9 +34,9 @@ All directions start at **1.0** before fine-tuning. The table shows how far each
 | Dolly | Sycophancy | Agreed with 30% more false premises |
 | All 3 | Deception | Modest behavioral change despite geometric stability |
 
-![Geometric drift vs behavioral change](https://raw.githubusercontent.com/Ayesha-Imr/safety-compass/main/results/phase4/analysis/drift_vs_behavior_plot.png)
+![Cosine drift across all three datasets](https://raw.githubusercontent.com/Ayesha-Imr/safety-compass/main/results/phase3/analysis/comparative_cosine_drift.png)
 
-*Each point is one (dataset, concept) pair. Lower cosine (more drift) correlates with larger behavioral degradation. Refusal points cluster at the left with the most drift and behavior change; deception stays near 1.0.*
+*The fragility hierarchy is consistent across all datasets: refusal drifts the most, sycophancy is intermediate, deception barely moves.*
 
 The refusal direction is consistently the most fragile safety concept, drifting significantly even during benign (non-adversarial) fine-tuning. This suggests refusal behavior is the first safety property at risk during any fine-tuning run.
 
