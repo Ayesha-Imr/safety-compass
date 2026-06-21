@@ -1,4 +1,5 @@
 !.github/
+kaggle/
 docs/
 results/*
 !results/.gitkeep
