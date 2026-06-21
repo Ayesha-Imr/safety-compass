@@ -12,7 +12,7 @@ We monitored three safety concepts -- refusal, sycophancy, and deception -- acro
 
 **Cosine similarity to baseline direction** (1.0 = unchanged, 0.0 = completely different):
 
-![Cosine similarity drift during fine-tuning on Alpaca](results/phase3/exp1/cosine_drift.png)
+![Cosine similarity drift during fine-tuning on Alpaca](https://raw.githubusercontent.com/Ayesha-Imr/safety-compass/main/results/phase3/exp1/cosine_drift.png)
 
 *Refusal (blue) drops to ~0.35 within 50 steps. Sycophancy (orange) drifts moderately. Deception (green) barely moves. Dashed line = 0.95 significance threshold.*
 
@@ -34,7 +34,7 @@ All directions start at **1.0** before fine-tuning. The table shows how far each
 | Dolly | Sycophancy | Agreed with 30% more false premises |
 | All 3 | Deception | Modest behavioral change despite geometric stability |
 
-![Geometric drift vs behavioral change](results/phase4/analysis/drift_vs_behavior_plot.png)
+![Geometric drift vs behavioral change](https://raw.githubusercontent.com/Ayesha-Imr/safety-compass/main/results/phase4/analysis/drift_vs_behavior_plot.png)
 
 *Each point is one (dataset, concept) pair. Lower cosine (more drift) correlates with larger behavioral degradation. Refusal points cluster at the left with the most drift and behavior change; deception stays near 1.0.*
 
@@ -130,7 +130,7 @@ Every `measure_every_n_steps` steps, the callback re-extracts concept directions
 | `direction_norm` | Magnitude of the raw difference-in-means vector. Large changes may indicate representational reorganization. |
 | `cross_*_cosine` | Pairwise cosine between different concept directions. Rising values indicate concepts are becoming entangled. |
 
-![Metric heatmap across training steps](results/phase3/exp1/metric_heatmap.png)
+![Metric heatmap across training steps](https://raw.githubusercontent.com/Ayesha-Imr/safety-compass/main/results/phase3/exp1/metric_heatmap.png)
 
 *Example output from an Alpaca fine-tuning run. Each row is a metric for one concept; columns are training steps. Red indicates degradation from baseline.*
 
