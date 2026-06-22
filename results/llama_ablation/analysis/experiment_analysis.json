@@ -1,0 +1,139 @@
+{
+  "experiments": {
+    "Alpaca": {
+      "csv_path": "/Users/ayesha/Projects/safety-compass/kaggle/llama_ablation/results_alpaca/experiment/drift_log.csv",
+      "summary": {
+        "deception": {
+          "min_cosine": 0.749562680721283,
+          "final_cosine": 0.7521034479141235,
+          "step_at_min_cosine": 900,
+          "drift_onset_step": 50,
+          "min_auroc_fixed": 0.9550000000000001,
+          "final_auroc_fixed": 0.9600000000000001,
+          "initial_norm": 0.8912303447723389,
+          "final_norm": 0.707326352596283,
+          "norm_change_pct": -20.634844095555728
+        },
+        "refusal": {
+          "min_cosine": 0.7251279950141907,
+          "final_cosine": 0.7269377708435059,
+          "step_at_min_cosine": 900,
+          "drift_onset_step": 50,
+          "min_auroc_fixed": 0.9624999999999999,
+          "final_auroc_fixed": 0.965,
+          "initial_norm": 2.6284518241882324,
+          "final_norm": 2.1392369270324707,
+          "norm_change_pct": -18.612283194760483
+        },
+        "sycophancy": {
+          "min_cosine": 0.643622875213623,
+          "final_cosine": 0.6450932621955872,
+          "step_at_min_cosine": 900,
+          "drift_onset_step": 50,
+          "min_auroc_fixed": 0.9575,
+          "final_auroc_fixed": 1.0,
+          "initial_norm": 0.1831756979227066,
+          "final_norm": 0.2515561282634735,
+          "norm_change_pct": 37.33051442753118
+        }
+      },
+      "fragility_ranking": [
+        "sycophancy",
+        "refusal",
+        "deception"
+      ]
+    },
+    "Dolly": {
+      "csv_path": "/tmp/dolly_final/experiment/drift_log.csv",
+      "summary": {
+        "deception": {
+          "min_cosine": 0.6066163778305054,
+          "final_cosine": 0.6080248355865479,
+          "step_at_min_cosine": 850,
+          "drift_onset_step": 50,
+          "min_auroc_fixed": 0.91,
+          "final_auroc_fixed": 0.9125,
+          "initial_norm": 0.8912303447723389,
+          "final_norm": 0.48896148800849915,
+          "norm_change_pct": -45.13635101446166
+        },
+        "refusal": {
+          "min_cosine": 0.6609787344932556,
+          "final_cosine": 0.6711571216583252,
+          "step_at_min_cosine": 650,
+          "drift_onset_step": 50,
+          "min_auroc_fixed": 0.965,
+          "final_auroc_fixed": 0.9775,
+          "initial_norm": 2.6284518241882324,
+          "final_norm": 2.1064469814300537,
+          "norm_change_pct": -19.859783540807104
+        },
+        "sycophancy": {
+          "min_cosine": 0.6175501346588135,
+          "final_cosine": 0.6542142033576965,
+          "step_at_min_cosine": 200,
+          "drift_onset_step": 50,
+          "min_auroc_fixed": 0.9624999999999999,
+          "final_auroc_fixed": 1.0,
+          "initial_norm": 0.1831756979227066,
+          "final_norm": 0.1409464180469513,
+          "norm_change_pct": -23.053975147715562
+        }
+      },
+      "fragility_ranking": [
+        "deception",
+        "sycophancy",
+        "refusal"
+      ]
+    },
+    "Code Alpaca": {
+      "csv_path": "/tmp/codealpaca_full/experiment/drift_log.csv",
+      "summary": {
+        "deception": {
+          "min_cosine": 0.7723069190979004,
+          "final_cosine": 0.7730671763420105,
+          "step_at_min_cosine": 850,
+          "drift_onset_step": 50,
+          "min_auroc_fixed": 0.975,
+          "final_auroc_fixed": 0.99,
+          "initial_norm": 0.8912303447723389,
+          "final_norm": 0.868388831615448,
+          "norm_change_pct": -2.5629191477682056
+        },
+        "refusal": {
+          "min_cosine": 0.7422279119491577,
+          "final_cosine": 0.7477661967277527,
+          "step_at_min_cosine": 850,
+          "drift_onset_step": 50,
+          "min_auroc_fixed": 0.97,
+          "final_auroc_fixed": 0.9774999999999999,
+          "initial_norm": 2.6284518241882324,
+          "final_norm": 1.9634748697280884,
+          "norm_change_pct": -25.29918746620036
+        },
+        "sycophancy": {
+          "min_cosine": 0.7541517019271851,
+          "final_cosine": 0.7631255388259888,
+          "step_at_min_cosine": 650,
+          "drift_onset_step": 50,
+          "min_auroc_fixed": 0.9524999999999999,
+          "final_auroc_fixed": 0.995,
+          "initial_norm": 0.1831756979227066,
+          "final_norm": 0.17007288336753845,
+          "norm_change_pct": -7.153140238448584
+        }
+      },
+      "fragility_ranking": [
+        "refusal",
+        "sycophancy",
+        "deception"
+      ]
+    }
+  },
+  "concepts": [
+    "deception",
+    "refusal",
+    "sycophancy"
+  ],
+  "drift_threshold": 0.95
+}

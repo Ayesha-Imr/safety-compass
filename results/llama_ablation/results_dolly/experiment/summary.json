@@ -1,0 +1,72 @@
+{
+  "experiment_label": "Dolly",
+  "model": "meta-llama/Meta-Llama-3-8B-Instruct",
+  "dataset": "databricks/databricks-dolly-15k",
+  "status": "GO",
+  "go_criterion": "At least one concept has cosine_to_baseline < 0.95",
+  "num_measurements": 20,
+  "concepts": {
+    "refusal": {
+      "baseline_layer": 11,
+      "baseline_auroc": 1.0,
+      "min_cosine_to_baseline": 0.6609787344932556,
+      "step_at_min_cosine": 650,
+      "final_cosine_to_baseline": 0.6711571216583252,
+      "drift_onset_step": 50,
+      "min_auroc_fixed": 0.965,
+      "final_auroc_fixed": 0.9775,
+      "drifted_below_0_95": true
+    },
+    "sycophancy": {
+      "baseline_layer": 6,
+      "baseline_auroc": 1.0,
+      "min_cosine_to_baseline": 0.6175501346588135,
+      "step_at_min_cosine": 200,
+      "final_cosine_to_baseline": 0.6542142033576965,
+      "drift_onset_step": 50,
+      "min_auroc_fixed": 0.9624999999999999,
+      "final_auroc_fixed": 1.0,
+      "drifted_below_0_95": true
+    },
+    "deception": {
+      "baseline_layer": 9,
+      "baseline_auroc": 1.0,
+      "min_cosine_to_baseline": 0.6066163778305054,
+      "step_at_min_cosine": 850,
+      "final_cosine_to_baseline": 0.6080248355865479,
+      "drift_onset_step": 50,
+      "min_auroc_fixed": 0.91,
+      "final_auroc_fixed": 0.9125,
+      "drifted_below_0_95": true
+    }
+  },
+  "baseline_summary": {
+    "refusal": {
+      "name": "refusal",
+      "layer": 11,
+      "baseline_auroc": 1.0,
+      "direction_norm": 2.6284518241882324
+    },
+    "sycophancy": {
+      "name": "sycophancy",
+      "layer": 6,
+      "baseline_auroc": 1.0,
+      "direction_norm": 0.1831756979227066
+    },
+    "deception": {
+      "name": "deception",
+      "layer": 9,
+      "baseline_auroc": 1.0,
+      "direction_norm": 0.8912303447723389
+    }
+  },
+  "train_metrics": {
+    "train_runtime": 21594.1332,
+    "train_samples_per_second": 0.695,
+    "train_steps_per_second": 0.043,
+    "total_flos": 1.635858878779392e+17,
+    "train_loss": 1.4874003545417827,
+    "epoch": 3.0
+  },
+  "runtime_seconds": 21815.85996365547
+}

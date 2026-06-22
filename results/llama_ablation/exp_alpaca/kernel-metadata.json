@@ -1,0 +1,13 @@
+{
+  "id": "ayeshaimr/llama-exp-alpaca",
+  "title": "llama-exp-alpaca",
+  "code_file": "script.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": ["ayeshaimr/nsa-hf-token"],
+  "competition_sources": [],
+  "kernel_sources": []
+}
