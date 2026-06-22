@@ -40,6 +40,31 @@ All directions start at **1.0** before fine-tuning. The table shows how far each
 
 The refusal direction is consistently the most fragile safety concept, drifting significantly even during benign (non-adversarial) fine-tuning. This suggests refusal behavior is the first safety property at risk during any fine-tuning run.
 
+### Cross-Architecture Ablation: Llama-3-8B
+
+To test whether the fragility hierarchy is architecture-independent, we replicated the full study on Meta-Llama-3-8B-Instruct (32 layers, 4096 hidden dim, 4-bit NF4 quantized) using the same contrastive pairs, datasets, and QLoRA configuration.
+
+| Dataset | Refusal | Sycophancy | Deception |
+|---------|---------|------------|-----------|
+| Alpaca | 1.0 &rarr; **0.725** &rarr; 0.727 | 1.0 &rarr; **0.644** &rarr; 0.645 | 1.0 &rarr; **0.750** &rarr; 0.752 |
+| Dolly | 1.0 &rarr; **0.661** &rarr; 0.671 | 1.0 &rarr; **0.618** &rarr; 0.654 | 1.0 &rarr; **0.607** &rarr; 0.608 |
+| Code Alpaca | 1.0 &rarr; **0.742** &rarr; 0.748 | 1.0 &rarr; **0.754** &rarr; 0.763 | 1.0 &rarr; **0.772** &rarr; 0.773 |
+
+![Cosine drift comparison: Qwen3-8B vs Llama-3-8B](https://raw.githubusercontent.com/Ayesha-Imr/safety-compass/main/results/llama_ablation/analysis/cosine_drift_comparison.png)
+
+*Top row: Qwen3-8B shows a clear hierarchy (refusal >> sycophancy >> deception). Bottom row: Llama-3-8B shows uniform drift across all three concepts.*
+
+![Fragility heatmap across models and datasets](https://raw.githubusercontent.com/Ayesha-Imr/safety-compass/main/results/llama_ablation/analysis/fragility_heatmap.png)
+
+*Qwen shows extreme refusal fragility (0.34--0.37) with stable deception (0.96+). Llama shows moderate, uniform drift (0.61--0.77) across all concepts.*
+
+**Key takeaways from the ablation:**
+
+- **The fragility hierarchy is model-dependent.** On Qwen, refusal is always the most fragile concept. On Llama, the most fragile concept varies by dataset.
+- **All concepts drift on both models.** Every concept crosses the 0.95 significance threshold within 50 steps on both architectures, confirming that safety representations begin shifting immediately during fine-tuning.
+- **Deception stability is not universal.** Deception barely moves on Qwen (0.96+) but drifts substantially on Llama (0.61--0.77). A concept that appears "safe" on one model can be vulnerable on another.
+- **Per-model monitoring is necessary.** These results reinforce the need for architecture-specific safety monitoring rather than relying on fragility patterns from a single model.
+
 ## Installation
 
 ```bash
@@ -321,11 +346,11 @@ Each concept is a self-contained contribution: create the contrastive pairs, val
 ## Citation
 
 ```bibtex
-@software{imran2025safetycompass,
+@software{imran2026safetycompass,
     title  = {Safety Compass: Monitoring Safety-Relevant Concept Directions During LLM Fine-Tuning},
     author = {Imran, Ayesha and Aaliyan, Muhammad},
     url    = {https://github.com/Ayesha-Imr/safety-compass},
-    year   = {2025},
+    year   = {2026},
 }
 ```
 

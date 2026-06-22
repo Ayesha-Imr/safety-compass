@@ -8,7 +8,8 @@ results/*
 !results/phase3/**
 !results/phase4/
 !results/phase4/**
-!results/llama_ablation
+!results/llama_ablation/
+!results/llama_ablation/**
 results/phase4/exp*/phase4_exp*_adapter/
 *.pt
 *.pth
